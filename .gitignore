@@ -1,0 +1,32 @@
+# 个人/敏感
+.env
+
+# WorkBuddy 项目数据（非缓存，勿删但勿提交）
+.workbuddy/
+
+# 构建产物 / 打包
+build/
+dist/
+*.exe
+__pycache__/
+*.pyc
+
+# 本地扫描/缓存
+outputs/
+
+# 大型生成文件 / 备份（非源码、可重建）
+web/mobile/static_data*.json
+web/static_data.json
+
+# 系统 / 第三方
+node_modules/
+.DS_Store
+
+# 生成缓存 / 原始抓取 dump（可重建，勿入库）
+data/processed/fetch_predictions_*.json
+webmobiletmp_*.json
+dongqiudi*.txt
+preds.json
+data/raw/new_leagues*.json
+*.log
+

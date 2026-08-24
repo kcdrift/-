@@ -1,0 +1,18 @@
+# Render 部署配置（路径2：实时版）
+# 用法：在 Render 控制台创建 Web Service 时「使用已有的配置文件」选择本文件，
+# 或直接手动填：Build Command = pip install -r requirements.txt，Start Command = python web/app.py
+services:
+  - type: web
+    name: zucai-football
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python web/app.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      # 实时盘口用 football-data.org（海外可访问）。体彩网在海外服务器可能受限，
+      # 若不用 live 模式则用本地赛程 CSV + 合成盘口，无需以下 key。
+      - key: FOOTBALL_DATA_API_KEY
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>足彩量化预测</title>
+<style>
+  :root { --bg:#0f1420; --card:#1a2233; --accent:#4f9cff; --text:#e6ecf5; --muted:#8b97ad; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; }
+  header { padding:18px 24px; border-bottom:1px solid #2a3550; }
+  h1 { margin:0; font-size:20px; }
+  .sub { color:var(--muted); font-size:13px; margin-top:4px; }
+  .filters { display:flex; gap:12px; flex-wrap:wrap; padding:16px 24px; align-items:center; }
+  select, button, input[type=range] { background:var(--card); color:var(--text); border:1px solid #2a3550;
+                   border-radius:8px; padding:8px 12px; font-size:14px; min-height:44px; }
+  button { cursor:pointer; background:var(--accent); border:none; color:#fff; font-weight:600; }
+  .wrap { padding:0 24px 40px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #232d44; font-size:14px; }
+  th { color:var(--muted); font-weight:600; background:#141b2b; position:sticky; top:0; }
+  tr.match:hover td { background:#172033; cursor:pointer; }
+  tr.dim td { opacity:0.35; }
+  .bar { height:8px; border-radius:4px; background:#2a3550; overflow:hidden; min-width:120px; }
+  .bar > i { display:block; height:100%; background:var(--accent); }
+  .tag { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .tag.高 { background:#1f6b3a; color:#9ff0bf; }
+  .tag.中 { background:#7a5a16; color:#ffd98a; }
+  .tag.低 { background:#6b2a2a; color:#ff9f9f; }
+  .scores { color:var(--muted); font-size:13px; }
+  .empty { color:var(--muted); padding:40px; text-align:center; }
+  .meta { color:var(--muted); font-size:12px; margin-top:6px; }
+  .nomodel-badge { display:inline-block; padding:2px 10px; border-radius:999px; font-weight:700;
+    background:#6b2a2a; color:#ffb454; font-size:13px; }
+  .nomodel-odds { color:var(--muted); font-size:13px; margin-left:10px; }
+  .nomodel-cell { padding:10px 12px; }
+  .row-detail > td { background:#101725; padding:16px 20px; }
+  .detail-grid { display:flex; gap:20px; flex-wrap:wrap; }
+  .detail-box { background:#1a2233; border:1px solid #2a3550; border-radius:10px; padding:12px 14px; min-width:240px; }
+  .detail-box h4 { margin:0 0 8px; font-size:13px; color:var(--accent); font-weight:600; }
+  table.mini { width:100%; border-collapse:collapse; }
+  table.mini th, table.mini td { padding:4px 8px; font-size:13px; border-bottom:1px solid #232d44; text-align:right; }
+  table.mini th:first-child, table.mini td:first-child { text-align:left; }
+  .dist { width:100%; display:block; }
+  .dist text { fill:#e6ecf5; font-size:13px; font-weight:600; }
+  .hint { color:var(--muted); font-size:12px; }
+  .val { font-weight:700; }
+  .val.green { color:#7fffb0; }
+  .val.red { color:#ff9f9f; }
+  .val.neutral { color:var(--muted); }
+  .tabs { display:flex; gap:8px; padding:12px 24px 0; }
+  .tab { background:transparent; color:var(--muted); border:1px solid #2a3550; }
+  .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  code { background:#101725; padding:2px 6px; border-radius:6px; font-size:13px; }
+  /* 今日高亮 */
+  tr.today { border-left:3px solid #7fffb0; }
+  tr.today td:first-child:before { content:"📅 "; }
+
+  /* === 响应式：平板及以下 (≤768px) === */
+  @media (max-width: 768px) {
+    header { padding:14px 16px; }
+    h1 { font-size:18px; }
+    .sub { font-size:12px; }
+    .filters { flex-direction:column; align-items:stretch; gap:8px; padding:12px 16px; }
+    select, button { width:100%; }
+    .wrap { padding:0 16px 24px; }
+    table { font-size:13px; }
+    th, td { padding:8px 6px; }
+    /* 隐藏次要列 */
+    th:nth-child(8), td:nth-child(8),  /* 主让一球 */
+    th:nth-child(9), td:nth-child(9),  /* 大小球 */
+    th:nth-child(10), td:nth-child(10) { display:none; }
+    .tabs { padding:10px 16px 0; }
+    .tab { flex:1; font-size:14px; padding:10px; }
+  }
+
+  /* === 响应式：手机 (<480px) === */
+  @media (max-width: 480px) {
+    header { padding:12px 12px; }
+    h1 { font-size:16px; }
+    .sub { font-size:11px; }
+    .filters { gap:6px; }
+    select, button { font-size:16px; min-height:48px; } /* 触摸友好 */
+    .wrap { padding:0 12px 20px; }
+    /* 手机卡片视图：切换表格为卡片 */
+    table thead { display:none; }
+    table, tbody, tr.match, td { display:block; width:100%; }
+    tr.match {
+      background:var(--card);
+      border:1px solid #2a3550;
+      border-radius:12px;
+      margin-bottom:12px;
+      padding:14px;
+      position:relative;
+    }
+    tr.match:hover { background:#172033; }
+    tr.dim { opacity:0.5; }
+    td {
+      text-align:left;
+      padding:4px 0;
+      border:none;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    td:before {
+      content:attr(data-label);
+      color:var(--muted);
+      font-size:12px;
+      margin-right:12px;
+      flex-shrink:0;
+    }
+    /* 日期列特殊处理 */
+    td:nth-child(1):before { content:"日期"; }
+    td:nth-child(2):before { content:"联赛"; }
+    td:nth-child(3):before { content:"主队"; }
+    td:nth-child(4):before { content:"客队"; }
+    td:nth-child(5):before { content:"主胜"; }
+    td:nth-child(6):before { content:"平"; }
+    td:nth-child(7):before { content:"客胜"; }
+    td:nth-child(8):before { content:"置信度"; }
+    td:nth-child(9):before { content:"最可能比分"; }
+    /* 队名突出 */
+    td:nth-child(3), td:nth-child(4) {
+      font-weight:600;
+      font-size:15px;
+      padding:6px 0;
+    }
+    /* 概率条在手机上简化 */
+    .bar { min-width:60px; height:6px; }
+    /* 详情页单列 */
+    .detail-grid { flex-direction:column; }
+    .detail-box { min-width:unset; width:100%; }
+    .row-detail > td { padding:12px; }
+    /* 标签全屏 */
+    .tabs { flex-direction:column; padding:10px 12px 0; gap:6px; }
+    .tab { width:100%; padding:14px; font-size:16px; }
+    /* 更大的点击区域 */
+    tr.match { touch-action:manipulation; }
+    /* 隐藏次要信息 */
+    .meta { font-size:11px; }
+    code { font-size:12px; }
+  }
+
+  /* === 响应式：超大屏幕 (>1400px) === */
+  @media (min-width: 1400px) {
+    .wrap { max-width:1400px; margin:0 auto; }
+    header { max-width:1400px; margin:0 auto; }
+    .filters { max-width:1400px; margin:0 auto; }
+    .tabs { max-width:1400px; margin:0 auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ 足彩量化预测</h1>
+  <div class="sub">Elo 评级 + 泊松模型 + 蒙特卡洛模拟 · 概率与比分预测均标注置信度 · 点击任意行展开盘口全档、波胆、单双、半全场与概率分布</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="pre">📊 赛前预测</button>
+  <button class="tab" data-tab="post">🔍 赛后对比</button>
+</div>
+
+<div id="tab-pre"><div class="filters">
+  <select id="league"><option value="">全部联赛</option></select>
+  <select id="date"><option value="">全部日期</option></select>
+  <button id="go">查询</button>
+  <label style="margin-left:8px">置信度阈值</label>
+  <input type="range" id="confTh" min="0" max="1" step="0.05" value="0">
+  <span id="confVal" class="meta">0.00（不筛选）</span>
+  <span class="meta" id="count"></span>
+</div>
+
+<div class="wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>日期</th><th>联赛</th><th>主队</th><th>客队</th>
+        <th>主胜</th><th>平</th><th>客胜</th>
+        <th>主让一球(赢盘)</th><th>大小球2.5(大)</th>
+        <th>最可能比分</th><th>置信度</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">暂无匹配数据</div>
+  <div class="meta">模型基于历史数据训练，胜平负为概率估计，不构成投注建议。置信度由概率集中度、信息熵与数据量综合得出。拖动「置信度阈值」可灰显低置信预测。</div>
+</div></div>
+
+<div id="tab-post" style="display:none">
+  <div class="wrap">
+    <div id="review-content"></div>
+  </div>
+</div>
+
+<script>
+const pct = x => (x * 100).toFixed(1) + "%";
+const scoreStr = s => s.map(x => `${x.home_goals}-${x.away_goals} (${(x.prob*100).toFixed(0)}%)`).join("  ");
+
+let currentData = [];
+
+async function loadFilters() {
+  const r = await fetch("/api/filters");
+  const d = await r.json();
+  const lg = document.getElementById("league");
+  d.leagues.forEach(l => lg.add(new Option(l, l)));
+  const dt = document.getElementById("date");
+  d.dates.forEach(x => dt.add(new Option(x, x)));
+}
+
+async function query() {
+  const league = document.getElementById("league").value;
+  const date = document.getElementById("date").value;
+  const params = new URLSearchParams();
+  if (league) params.set("league", league);
+  if (date) params.set("date", date);
+  const r = await fetch("/api/predictions?" + params.toString());
+  currentData = await r.json();
+  render();
+}
+
+function render() {
+  const th = parseFloat(document.getElementById("confTh").value);
+  const rows = document.getElementById("rows");
+  const empty = document.getElementById("empty");
+  rows.innerHTML = "";
+  document.getElementById("count").textContent = `共 ${currentData.length} 场`;
+  if (!currentData.length) { empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  const today = new Date().toISOString().slice(0,10);
+  currentData.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+    const isToday = p.date === today;
+    // 无训练模型联赛（日职/韩职/欧冠）：不渲染假概率，展示「不可作准」横幅 + 真实盘口
+    if (p.no_model) {
+      tr.className = "match nomodel" + (isToday ? " today" : "");
+      const o = p.odds || {};
+      let oddsTxt = "无盘口数据";
+      if (o.h2h) oddsTxt = `主胜 ${o.h2h.home_win_odds} / 平 ${o.h2h.draw_odds} / 客胜 ${o.h2h.away_win_odds}（市场赔率·仅供参考）`;
+      else if (o.source === "real") oddsTxt = "有盘口但未含胜平负";
+      tr.innerHTML = `
+        <td data-label="日期">${p.date}</td>
+        <td data-label="联赛">${p.league}</td>
+        <td data-label="主队">${p.home_cn || p.home}</td>
+        <td data-label="客队">${p.away_cn || p.away}</td>
+        <td data-label="状态" colspan="7" class="nomodel-cell">
+          <span class="nomodel-badge">⚠ 暂无训练数据·不可作准</span>
+          <span class="nomodel-odds">${oddsTxt}</span>
+        </td>`;
+      tr.onclick = () => toggleDetail(idx, tr);
+      rows.appendChild(tr);
+      return;
+    }
+    const pr = p.prob;
+    tr.className = "match" + (th > 0 && p.confidence.score < th ? " dim" : "") + (isToday ? " today" : "");
+    tr.innerHTML = `
+      <td data-label="日期">${p.date}</td>
+      <td data-label="联赛">${p.league}</td>
+      <td data-label="主队">${p.home_cn || p.home}</td>
+      <td data-label="客队">${p.away_cn || p.away}</td>
+      <td data-label="主胜">${pct(pr.home_win)}<div class="bar"><i style="width:${pr.home_win*100}%"></i></div></td>
+      <td data-label="平">${pct(pr.draw)}</td>
+      <td data-label="客胜">${pct(pr.away_win)}<div class="bar"><i style="width:${pr.away_win*100}%"></i></div></td>
+      <td data-label="让球赢盘">${pct(p.handicap['1'].win)}<div class="bar"><i style="width:${p.handicap['1'].win*100}%"></i></div></td>
+      <td data-label="大小球大">${pct(p.totals['2.5'].over)}<div class="bar"><i style="width:${p.totals['2.5'].over*100}%"></i></div></td>
+      <td data-label="最可能比分" class="scores">${scoreStr(p.most_likely_scores)}</td>
+      <td data-label="置信度"><span class="tag ${p.confidence.level}">${p.confidence.level} (${p.confidence.score})</span></td>`;
+    tr.onclick = () => toggleDetail(idx, tr);
+    rows.appendChild(tr);
+  });
+}
+
+function toggleDetail(idx, tr) {
+  const next = tr.nextElementSibling;
+  if (next && next.classList.contains("row-detail")) {
+    next.remove();
+    return;
+  }
+  const p = currentData[idx];
+  const detail = document.createElement("tr");
+  detail.className = "row-detail";
+  detail.innerHTML = `<td colspan="11">${detailHTML(p)}</td>`;
+  tr.after(detail);
+}
+
+function detailHTML(p) {
+  // 无训练模型：只展示真实盘口，不渲染任何概率分布/价值检测
+  if (p.no_model) {
+    const o = p.odds || {};
+    let html = `<div class="detail-box"><h4>⚠ 暂无训练数据·不可作准</h4>`
+      + `<div class="hint">联赛「${p.league}」当前无足够真实历史赛果训练模型，不输出胜平负概率，避免误导。以下仅展示真实盘口（如有）供参考。</div>`;
+    if (o.h2h) html += `<table class="mini"><tr><th>主胜</th><th>平</th><th>客胜</th></tr>`
+      + `<tr><td>${o.h2h.home_win_odds}</td><td>${o.h2h.draw_odds}</td><td>${o.h2h.away_win_odds}</td></tr></table>`;
+    if (o.handicap) html += `<div class="hint">让球 主让${o.handicap.line}：上盘 ${o.handicap.home_odds} / 下盘 ${o.handicap.away_odds}</div>`;
+    if (o.totals) html += `<div class="hint">大小球 大${o.totals.line}：${o.totals.over_odds} / 小${o.totals.line}：${o.totals.under_odds}</div>`;
+    if (!o.h2h && o.source !== "real") html += `<div class="hint">未抓取到该场盘口数据。</div>`;
+    html += `</div>`;
+    return html;
+  }
+  const pr = p.prob;
+  // 让球盘全档
+  const hk = Object.keys(p.handicap);
+  let hkRows = hk.map(k => {
+    const h = p.handicap[k];
+    const drawCell = (h.draw !== undefined && h.draw !== null) ? `<td>${pct(h.draw)}</td>` : `<td>-</td>`;
+    return `<tr><td>主让 ${k}</td><td>${pct(h.win)}</td>${drawCell}<td>${pct(h.lose)}</td></tr>`;
+  }).join("");
+  // 大小球全档
+  const tk = Object.keys(p.totals);
+  let tkRows = tk.map(k => {
+    const t = p.totals[k];
+    return `<tr><td>大${k} / 小${k}</td><td>${pct(t.over)}</td><td>${pct(t.under)}</td></tr>`;
+  }).join("");
+  // 胜平负概率分布 SVG (viewBox 等比，文字不变形)
+  const VBW = 600;
+  const ww = pr.home_win * VBW, dw = pr.draw * VBW, lw = pr.away_win * VBW;
+  const distSVG = `
+  <svg class="dist" viewBox="0 0 ${VBW} 30">
+    <rect x="0" y="5" width="${ww}" height="18" fill="#e0524f"/>
+    <rect x="${ww}" y="5" width="${dw}" height="18" fill="#8b97ad"/>
+    <rect x="${ww+dw}" y="5" width="${lw}" height="18" fill="#4f9cff"/>
+    <text x="${ww/2}" y="18" text-anchor="middle">主胜 ${(pr.home_win*100).toFixed(0)}%</text>
+    <text x="${ww+dw/2}" y="18" text-anchor="middle">平 ${(pr.draw*100).toFixed(0)}%</text>
+    <text x="${ww+dw+lw/2}" y="18" text-anchor="middle">客胜 ${(pr.away_win*100).toFixed(0)}%</text>
+  </svg>`;
+  return `
+  <div class="detail-grid">
+    <div class="detail-box">
+      <h4>让球盘全档（主队视角）</h4>
+      <table class="mini">
+        <tr><th>盘口</th><th>赢盘</th><th>走盘</th><th>输盘</th></tr>
+        ${hkRows}
+      </table>
+    </div>
+    <div class="detail-box">
+      <h4>大小球全档</h4>
+      <table class="mini">
+        <tr><th>界线</th><th>大球</th><th>小球</th></tr>
+        ${tkRows}
+      </table>
+    </div>
+    <div class="detail-box" style="flex:1; min-width:300px">
+      <h4>胜平负概率分布 · λ主=${p.lambda_home} / λ客=${p.lambda_away} · Elo差=${p.elo_diff}</h4>
+      ${distSVG}
+      <div class="hint" style="margin-top:8px">最可能比分：${scoreStr(p.most_likely_scores)}　置信度：${p.confidence.level} (${p.confidence.score})</div>
+    </div>
+    ${marketsBox(p)}
+    ${oddsBox(p)}
+  </div>`;
+}
+
+function marketsBox(p) {
+  // 波胆（正确比分）top6
+  const cs = p.correct_scores || p.most_likely_scores || [];
+  const csRows = cs.slice(0, 6).map(s =>
+    `<tr><td>${s.home_goals}-${s.away_goals}</td><td>${pct(s.prob)}</td></tr>`).join("");
+  // 单双（总进球奇偶）
+  const oe = p.odd_even || {odd: 0, even: 0};
+  const oeRows = `
+    <tr><td>总进球单数</td><td>${pct(oe.odd)}</td></tr>
+    <tr><td>总进球双数</td><td>${pct(oe.even)}</td></tr>`;
+  // 半全场（9 种组合）
+  const htftLabels = {HH: "胜胜", HD: "胜平", HA: "胜负",
+                      DH: "平胜", DD: "平平", DA: "平负",
+                      AH: "负胜", AD: "负平", AA: "负负"};
+  const htftOrder = ["HH", "HD", "HA", "DH", "DD", "DA", "AH", "AD", "AA"];
+  const hf = p.htft || {};
+  const htftRows = htftOrder.map(k =>
+    `<tr><td>${htftLabels[k]}</td><td>${pct(hf[k] || 0)}</td></tr>`).join("");
+  return `
+  <div class="detail-box">
+    <h4>波胆（正确比分 Top6）</h4>
+    <table class="mini">
+      <tr><th>比分</th><th>概率</th></tr>
+      ${csRows}
+    </table>
+    <div class="hint" style="margin-top:6px">全场比分蒙特卡洛分布，仅列最常见 6 项。</div>
+  </div>
+  <div class="detail-box">
+    <h4>单双（总进球奇偶）</h4>
+    <table class="mini">
+      <tr><th>方向</th><th>概率</th></tr>
+      ${oeRows}
+    </table>
+  </div>
+  <div class="detail-box">
+    <h4>半全场（9 种组合）</h4>
+    <table class="mini">
+      <tr><th>赛果</th><th>概率</th></tr>
+      ${htftRows}
+    </table>
+    <div class="hint" style="margin-top:6px">上/下半场各独立按 λ 半值采样，全场分布不变。</div>
+  </div>`;
+}
+
+function oddsBox(p) {
+  const o = p.odds || {source:"synthetic", handicap:{line:1, home_odds:0, away_odds:0, home_model_prob:0, away_model_prob:0, home_value:0, away_value:0}, totals:{line:2.5, over_odds:0, under_odds:0, over_model_prob:0, under_model_prob:0, over_value:0, under_value:0}};
+  const h = o.handicap, t = o.totals;
+  const valCls = v => v > 0.03 ? "green" : (v < -0.03 ? "red" : "neutral");
+  const valTxt = v => (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+  const mHome = h.home_odds ? 1 / h.home_odds : 0;
+  const mAway = h.away_odds ? 1 / h.away_odds : 0;
+  const mOver = t.over_odds ? 1 / t.over_odds : 0;
+  const mUnder = t.under_odds ? 1 / t.under_odds : 0;
+  const hWinM = (h.home_model_prob !== undefined) ? h.home_model_prob
+              : ((h.line !== undefined && (p.handicap[String(h.line)] || p.handicap[String(parseInt(h.line))])) ? (p.handicap[String(h.line)] || p.handicap[String(parseInt(h.line))]).win : p.handicap["1"].win);
+  const tOverM = (t.over_model_prob !== undefined) ? t.over_model_prob
+               : ((t.line !== undefined && (p.totals[String(t.line)] || p.totals[String(parseInt(t.line))])) ? (p.totals[String(t.line)] || p.totals[String(parseInt(t.line))]).over : p.totals["2.5"].over);
+  return `
+  <div class="detail-box" style="flex:1; min-width:340px">
+    <h4>实际盘口水位 · 价值信号（${o.source === "real" ? "真实数据" : "演示合成"}）</h4>
+    <table class="mini">
+      <tr><th>盘口</th><th>水位</th><th>模型概率</th><th>市场隐含</th><th>价值</th></tr>
+      <tr><td>主让${h.line} 上盘</td><td>${h.home_odds}</td><td>${pct(hWinM)}</td><td>${pct(mHome)}</td><td class="val ${valCls(h.home_value)}">${valTxt(h.home_value)}</td></tr>
+      <tr><td>主让${h.line} 下盘</td><td>${h.away_odds}</td><td>${pct(1 - hWinM)}</td><td>${pct(mAway)}</td><td class="val ${valCls(h.away_value)}">${valTxt(h.away_value)}</td></tr>
+      <tr><td>大${t.line}</td><td>${t.over_odds}</td><td>${pct(tOverM)}</td><td>${pct(mOver)}</td><td class="val ${valCls(t.over_value)}">${valTxt(t.over_value)}</td></tr>
+      <tr><td>小${t.line}</td><td>${t.under_odds}</td><td>${pct(1 - tOverM)}</td><td>${pct(mUnder)}</td><td class="val ${valCls(t.under_value)}">${valTxt(t.under_value)}</td></tr>
+    </table>
+    <div class="hint" style="margin-top:8px">价值 = 模型概率 − 市场隐含概率（1/水位）。<span class="val green">绿</span>=模型更看好（潜在价值），<span class="val red">红</span>=市场更看好。<b>仅供参考，非投注建议。</b></div>
+  </div>`;
+}
+
+document.getElementById("go").onclick = query;
+document.getElementById("league").onchange = query;
+document.getElementById("date").onchange = query;
+document.getElementById("confTh").oninput = () => {
+  const v = parseFloat(document.getElementById("confTh").value);
+  document.getElementById("confVal").textContent =
+    v.toFixed(2) + (v > 0 ? "（低于阈值灰显）" : "（不筛选）");
+  render();
+};
+loadFilters().then(query);
+
+// ---- 赛后对比 tab ----
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === name));
+  document.getElementById("tab-pre").style.display =
+    (name === "pre" ? "block" : "none");
+  document.getElementById("tab-post").style.display =
+    (name === "post" ? "block" : "none");
+  if (name === "post") loadReview();
+}
+document.querySelectorAll(".tab").forEach(b =>
+  b.onclick = () => switchTab(b.dataset.tab));
+
+function mark(v) {
+  return v ? '<span class="val green">✓</span>' : '<span class="val red">✗</span>';
+}
+
+async function loadReview() {
+  const box = document.getElementById("review-content");
+  box.innerHTML = '<div class="empty">加载中…</div>';
+  const r = await fetch("/api/review");
+  const d = await r.json();
+  if (!d.available) {
+    box.innerHTML = '<div class="empty">暂无赛后对比报告。<br><br>请先运行：<br>'
+      + '<code>python main.py review --pred data/processed/fetch_predictions.json '
+      + '--actual 真实赛果.csv [--reinforce --recalibrate]</code><br><br>'
+      + '生成 data/processed/review_report.json 后，本报告自动显示。</div>';
+    return;
+  }
+  const rep = d.report, s = rep.summary, cfg = d.config || {};
+  const hc = (cfg && cfg.default_handicap) || 1;
+  const tl = (cfg && cfg.default_total_line) || 2.5;
+  let html = '<h2 style="font-size:18px;margin:0 0 4px">🔍 赛后对比分析报告</h2>'
+    + '<div class="meta">对齐场次 ' + rep.meta.matched + ' · 未对齐预测 '
+    + rep.meta.unmatched_preds + ' · 未对齐真实 ' + rep.meta.unmatched_actuals + '</div>'
+
+    + '<h3 style="margin:18px 0 6px">准确率汇总</h3>'
+    + '<table><tr><th>指标</th><th>准确率</th><th>说明</th></tr>'
+    + '<tr data-label="胜负方向"><td data-label="指标">胜负方向</td><td data-label="准确率">' + pct(s['胜负方向准确率']) + '</td><td data-label="说明">n=' + s['场次'] + '</td></tr>'
+    + '<tr data-label="比分精确"><td data-label="指标">比分精确</td><td data-label="准确率">' + pct(s['比分精确命中率']) + '</td><td data-label="说明">真实比分命中波胆Top6</td></tr>'
+    + '<tr data-label="最可能比分"><td data-label="指标">最可能比分</td><td data-label="准确率">' + pct(s['最可能比分命中率']) + '</td><td data-label="说明">真实比分命中Top3</td></tr>'
+    + '<tr data-label="让球盘"><td data-label="指标">让球盘</td><td data-label="准确率">' + pct(s['让球盘命中率']) + '</td><td data-label="说明">主让' + hc + '</td></tr>'
+    + '<tr data-label="大小球"><td data-label="指标">大小球</td><td data-label="准确率">' + pct(s['大小球命中率']) + '</td><td data-label="说明">线' + tl + '</td></tr>'
+    + '<tr data-label="单双"><td data-label="指标">单双</td><td data-label="准确率">' + pct(s['单双命中率']) + '</td><td data-label="说明">总进球奇偶</td></tr>'
+    + '<tr data-label="半全场"><td data-label="指标">半全场</td><td data-label="准确率">' + (s['半全场命中率'] === null ? 'N/A' : pct(s['半全场命中率']))
+    + '</td><td data-label="说明">需真实半场比分</td></tr>'
+    + '<tr data-label="Brier"><td data-label="指标">Brier</td><td data-label="准确率">' + s['Brier分数'].toFixed(4) + '</td><td data-label="说明">越接近0越准</td></tr>'
+    + '<tr data-label="LogLoss"><td data-label="指标">LogLoss</td><td data-label="准确率">' + s['LogLoss'].toFixed(4) + '</td><td data-label="说明">越接近0越准</td></tr>'
+    + '</table>';
+
+  html += '<h3 style="margin:18px 0 6px">按联赛</h3><table>'
+    + '<tr><th>联赛</th><th>场</th><th>方向</th><th>比分</th><th>大小球</th><th>让球</th></tr>';
+  for (const [lg, v] of Object.entries(rep.by_league || {})) {
+    const nn = v.n || 1;
+    html += '<tr data-label="' + lg + '">'
+      + '<td data-label="联赛">' + lg + '</td>'
+      + '<td data-label="场">' + v.n + '</td>'
+      + '<td data-label="方向">' + pct(v.direction / nn) + '</td>'
+      + '<td data-label="比分">' + pct(v.exact / nn) + '</td>'
+      + '<td data-label="大小球">' + pct(v.ou / nn) + '</td>'
+      + '<td data-label="让球">' + pct(v.hc / nn) + '</td>'
+      + '</tr>';
+  }
+  html += '</table>';
+
+  html += '<h3 style="margin:18px 0 6px">按置信度分层（验证区分度：高应&gt;低）</h3><table>'
+    + '<tr><th>置信度</th><th>场</th><th>方向命中</th></tr>';
+  for (const lvl of ["高", "中", "低"]) {
+    const v = (rep.by_confidence || {})[lvl];
+    if (v) html += '<tr data-label="' + lvl + '">'
+      + '<td data-label="置信度"><span class="tag ' + lvl + '">' + lvl + '</span></td>'
+      + '<td data-label="场">' + v.n + '</td>'
+      + '<td data-label="方向命中">' + pct(v.direction / (v.n || 1)) + '</td></tr>';
+  }
+  html += '</table>';
+
+  html += '<h3 style="margin:18px 0 6px">逐场对照（' + rep.matches.length + ' 场）</h3><table>'
+    + '<tr><th>日期</th><th>联赛</th><th>对阵</th><th>预测W/D/L</th><th>真实比分</th>'
+    + '<th>方向</th><th>比分</th><th>让球</th><th>大小</th><th>单双</th><th>半全</th></tr>';
+  for (const x of rep.matches) {
+    const pr = x.pred_prob;
+    const ps = (pr.home_win * 100).toFixed(0) + '/' + (pr.draw * 100).toFixed(0)
+      + '/' + (pr.away_win * 100).toFixed(0);
+    const htf = (x.hit_htft === null) ? '<span class="meta">-</span>' : mark(x.hit_htft);
+    html += '<tr data-label="' + x.home + ' vs ' + x.away + '">'
+      + '<td data-label="日期">' + x.date + '</td>'
+      + '<td data-label="联赛">' + x.league + '</td>'
+      + '<td data-label="对阵">' + x.home + ' vs ' + x.away + '</td>'
+      + '<td data-label="预测W/D/L">' + ps + '</td>'
+      + '<td data-label="真实比分">' + x.actual_hg + '-' + x.actual_ag + '</td>'
+      + '<td data-label="方向">' + mark(x.hit_direction) + '</td>'
+      + '<td data-label="比分">' + mark(x.hit_exact) + '</td>'
+      + '<td data-label="让球">' + mark(x.hit_handicap) + '</td>'
+      + '<td data-label="大小">' + mark(x.hit_ou) + '</td>'
+      + '<td data-label="单双">' + mark(x.hit_odd_even) + '</td>'
+      + '<td data-label="半全">' + htf + '</td></tr>';
+  }
+  html += '</table><div class="meta" style="margin-top:10px">绿色✓=命中，红色✗=未命中。'
+    + '逐场对照完整数据见 data/processed/review_report.json。</div>';
+  box.innerHTML = html;
+}
+</script>
+</body>
+</html>

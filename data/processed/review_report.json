@@ -1,0 +1,186 @@
+{
+  "summary": {
+    "total_matches": 60,
+    "sample_size": 10,
+    "direction_accuracy": 60.0,
+    "exact_score_accuracy": 70.0,
+    "handicap_accuracy": 70.0,
+    "totals_accuracy": 60.0,
+    "logloss": 0.941,
+    "brier_score": 0.5639
+  },
+  "by_league": {
+    "意甲": {
+      "n": 4,
+      "direction_acc": 75.0,
+      "exact_acc": 50.0
+    },
+    "法甲": {
+      "n": 3,
+      "direction_acc": 66.7,
+      "exact_acc": 66.7
+    },
+    "英超": {
+      "n": 2,
+      "direction_acc": 50.0,
+      "exact_acc": 100.0
+    },
+    "西甲": {
+      "n": 1,
+      "direction_acc": 0.0,
+      "exact_acc": 100.0
+    }
+  },
+  "matches": [
+    {
+      "index": 1,
+      "league": "意甲",
+      "date": "2026-08-23",
+      "home": "Atalanta BC",
+      "away": "US Sassuolo Calcio",
+      "pred_home_win": 0.756,
+      "pred_draw": 0.173,
+      "pred_away_win": 0.071,
+      "actual_home": 2,
+      "actual_away": 1,
+      "result": "W",
+      "hit_direction": true,
+      "hit_exact": true
+    },
+    {
+      "index": 2,
+      "league": "意甲",
+      "date": "2026-08-23",
+      "home": "Frosinone Calcio",
+      "away": "Juventus FC",
+      "pred_home_win": 0.192,
+      "pred_draw": 0.282,
+      "pred_away_win": 0.526,
+      "actual_home": 0,
+      "actual_away": 1,
+      "result": "L",
+      "hit_direction": true,
+      "hit_exact": true
+    },
+    {
+      "index": 3,
+      "league": "意甲",
+      "date": "2026-08-23",
+      "home": "Torino FC",
+      "away": "AC Milan",
+      "pred_home_win": 0.338,
+      "pred_draw": 0.315,
+      "pred_away_win": 0.346,
+      "actual_home": 1,
+      "actual_away": 2,
+      "result": "L",
+      "hit_direction": true,
+      "hit_exact": false
+    },
+    {
+      "index": 4,
+      "league": "意甲",
+      "date": "2026-08-23",
+      "home": "Venezia FC",
+      "away": "US Lecce",
+      "pred_home_win": 0.431,
+      "pred_draw": 0.338,
+      "pred_away_win": 0.231,
+      "actual_home": 0,
+      "actual_away": 2,
+      "result": "L",
+      "hit_direction": false,
+      "hit_exact": false
+    },
+    {
+      "index": 5,
+      "league": "法甲",
+      "date": "2026-08-23",
+      "home": "Angers SCO",
+      "away": "Lille OSC",
+      "pred_home_win": 0.189,
+      "pred_draw": 0.278,
+      "pred_away_win": 0.533,
+      "actual_home": 0,
+      "actual_away": 2,
+      "result": "L",
+      "hit_direction": true,
+      "hit_exact": true
+    },
+    {
+      "index": 6,
+      "league": "法甲",
+      "date": "2026-08-23",
+      "home": "Le Havre AC",
+      "away": "AS Monaco FC",
+      "pred_home_win": 0.17,
+      "pred_draw": 0.242,
+      "pred_away_win": 0.588,
+      "actual_home": 0,
+      "actual_away": 1,
+      "result": "L",
+      "hit_direction": true,
+      "hit_exact": true
+    },
+    {
+      "index": 7,
+      "league": "法甲",
+      "date": "2026-08-23",
+      "home": "Paris Saint-Germain FC",
+      "away": "Stade Rennais FC 1901",
+      "pred_home_win": 0.69,
+      "pred_draw": 0.211,
+      "pred_away_win": 0.098,
+      "actual_home": 2,
+      "actual_away": 2,
+      "result": "D",
+      "hit_direction": false,
+      "hit_exact": false
+    },
+    {
+      "index": 8,
+      "league": "英超",
+      "date": "2026-08-23",
+      "home": "Manchester City FC",
+      "away": "AFC Bournemouth",
+      "pred_home_win": 0.64,
+      "pred_draw": 0.212,
+      "pred_away_win": 0.148,
+      "actual_home": 2,
+      "actual_away": 1,
+      "result": "W",
+      "hit_direction": true,
+      "hit_exact": true
+    },
+    {
+      "index": 9,
+      "league": "英超",
+      "date": "2026-08-23",
+      "home": "Newcastle United FC",
+      "away": "Liverpool FC",
+      "pred_home_win": 0.376,
+      "pred_draw": 0.268,
+      "pred_away_win": 0.356,
+      "actual_home": 2,
+      "actual_away": 2,
+      "result": "D",
+      "hit_direction": false,
+      "hit_exact": true
+    },
+    {
+      "index": 10,
+      "league": "西甲",
+      "date": "2026-08-23",
+      "home": "Club Atlético de Madrid",
+      "away": "Villarreal CF",
+      "pred_home_win": 0.582,
+      "pred_draw": 0.227,
+      "pred_away_win": 0.191,
+      "actual_home": 2,
+      "actual_away": 2,
+      "result": "D",
+      "hit_direction": false,
+      "hit_exact": true
+    }
+  ]
+}

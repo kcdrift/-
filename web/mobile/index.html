@@ -218,7 +218,7 @@ canvas {
 .detail.show { display: block; }
 .detail-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
 }
 .detail-box {
@@ -610,6 +610,21 @@ function render() {
                   <span class="stat-value">大${pct(v.over)} 小${pct(v.under)}</span>
                 </div>
               `).join('')}
+            </div>
+            <div class="detail-box">
+              <h4>半全场</h4>
+              ${(() => {
+                const names = {HH:'主/主', DH:'平/主', AH:'客/主', HD:'主/平', DD:'平/平', AD:'客/平', HA:'主/客', DA:'平/客', AA:'客/客'};
+                return Object.entries(p.htft || {})
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 5)
+                  .map(([k, v]) => `
+                    <div class="stat-row">
+                      <span class="stat-label">${names[k] || k}</span>
+                      <span class="stat-value">${pct(v)}</span>
+                    </div>
+                  `).join('');
+              })()}
             </div>
           </div>
         </div>

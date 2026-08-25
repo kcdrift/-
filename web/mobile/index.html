@@ -626,6 +626,26 @@ function render() {
                   `).join('');
               })()}
             </div>
+            <div class="detail-box">
+              <h4>波胆 Top6</h4>
+              ${(p.correct_scores || p.most_likely_scores || []).slice(0, 6).map(s => `
+                <div class="stat-row">
+                  <span class="stat-label">${s.home_goals}-${s.away_goals}</span>
+                  <span class="stat-value">${pct(s.prob)}</span>
+                </div>
+              `).join('')}
+            </div>
+            <div class="detail-box">
+              <h4>单双</h4>
+              <div class="stat-row">
+                <span class="stat-label">总进球单数</span>
+                <span class="stat-value">${pct((p.odd_even || {}).odd)}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">总进球双数</span>
+                <span class="stat-value">${pct((p.odd_even || {}).even)}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -646,32 +646,16 @@ function render() {
               `).join('')}
             </div>
             <div class="detail-box">
-              <h4>单双（主/客分拆）</h4>
+              <h4>总进球单双</h4>
               <div class="stat-row">
-                <span class="stat-label">主队进球·单</span>
-                <span class="stat-value">${pct((p.home_odd_even || {}).odd)}</span>
-              </div>
-              <div class="stat-row">
-                <span class="stat-label">主队进球·双</span>
-                <span class="stat-value">${pct((p.home_odd_even || {}).even)}</span>
-              </div>
-              <div class="stat-row">
-                <span class="stat-label">客队进球·单</span>
-                <span class="stat-value">${pct((p.away_odd_even || {}).odd)}</span>
-              </div>
-              <div class="stat-row">
-                <span class="stat-label">客队进球·双</span>
-                <span class="stat-value">${pct((p.away_odd_even || {}).even)}</span>
-              </div>
-              <div class="stat-row dim">
-                <span class="stat-label">总进球·单</span>
+                <span class="stat-label">单</span>
                 <span class="stat-value">${pct((p.odd_even || {}).odd)}</span>
               </div>
-              <div class="stat-row dim">
-                <span class="stat-label">总进球·双</span>
+              <div class="stat-row">
+                <span class="stat-label">双</span>
                 <span class="stat-value">${pct((p.odd_even || {}).even)}</span>
               </div>
-              <div class="detail-note">总进球因泊松特性天然接近均势，故以主/客分拆为预测主参考</div>
+              <div class="detail-note">${(p.odd_even_source || '').startsWith('real') ? '基于真实数据' : '模型估算'}</div>
             </div>
           </div>
         </div>

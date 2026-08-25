@@ -371,8 +371,12 @@ async function init() {
       loaded = await fb.json();
     }
     allPredictions = loaded;
-    // 按日期升序排，今晚23号自然排最前
-    allPredictions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    // 按真实比赛日期+时间升序排
+    allPredictions.sort((a, b) => {
+      const da = (a.match_date || a.date || '').localeCompare(b.match_date || b.date || '');
+      if (da !== 0) return da;
+      return (a.time || '').localeCompare(b.time || '');
+    });
 
     // 统计信息
     const today = new Date().toISOString().slice(0, 10);
@@ -394,8 +398,8 @@ async function init() {
       leagueSelect.appendChild(opt);
     });
     
-    // 填充日期选项
-    const dates = [...new Set(allPredictions.map(p => p.date))].sort();
+    // 填充日期选项（按真实比赛日期 match_date 分组）
+    const dates = [...new Set(allPredictions.map(p => p.match_date || p.date))].sort();
     const dateSelect = document.getElementById('dateFilter');
     dates.forEach(d => {
       const opt = document.createElement('option');
@@ -508,7 +512,7 @@ function render() {
   
   let filtered = allPredictions;
   if (league) filtered = filtered.filter(p => p.league === league);
-  if (date) filtered = filtered.filter(p => p.date === date);
+  if (date) filtered = filtered.filter(p => (p.match_date || p.date) === date);
   if (conf) filtered = filtered.filter(p => p.confidence.level === conf);
   
   const today = new Date().toISOString().slice(0, 10);
@@ -528,11 +532,11 @@ function render() {
       let oddsTxt = '无盘口数据';
       if (o.h2h) oddsTxt = `主胜 ${o.h2h.home_win_odds} / 平 ${o.h2h.draw_odds} / 客胜 ${o.h2h.away_win_odds}`;
       else if (o.source === 'real') oddsTxt = '有盘口但未含胜平负';
-      return `
+        return `
         <div class="match-card ${isToday ? 'today' : ''}">
           <div class="match-header">
             <span class="league">${p.league}${isToday ? '<span class="today-badge">今日</span>' : ''}</span>
-            <span class="date">${p.date}</span>
+            <span class="date">${p.match_date || p.date}${p.time ? ' ' + p.time : ''}</span>
           </div>
           <div class="teams">
             <div class="team"><div class="team-logo">${(p.home_cn||p.home).charAt(0)}</div><div class="team-name">${p.home_cn||p.home}</div></div>
@@ -548,11 +552,11 @@ function render() {
       `${s.home_goals}-${s.away_goals}(${(s.prob*100).toFixed(0)}%)`
     ).join(' ');
     
-    return `
+      return `
       <div class="match-card ${isToday ? 'today' : ''}">
         <div class="match-header">
           <span class="league">${p.league}${isToday ? '<span class="today-badge">今日</span>' : ''}${p.is_new ? '<span class="new-league-badge">NEW</span>' : ''}</span>
-          <span class="date">${p.date}</span>
+          <span class="date">${p.match_date || p.date}${p.time ? ' ' + p.time : ''}</span>
         </div>
         <div class="teams">
           <div class="team">
